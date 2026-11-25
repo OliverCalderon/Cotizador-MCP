@@ -1,0 +1,12 @@
+{
+    "mcp": {
+        "url": "http://127.0.0.1:3000/mcp"
+    },
+    "llm": {
+        "baseUrl": "http://127.0.0.1:11434",
+        "chatPath": "/api/chat",
+        "model": "qwen3.5:4b",
+        "think": true,
+        "numCtx": 4096
+    }
+}

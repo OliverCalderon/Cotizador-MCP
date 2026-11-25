@@ -1,0 +1,20 @@
+{
+    "moneda": "MXN",
+    "producto": [
+        { "id": 1, "nombre": "Nintendo Switch OLED", "precio": 6000 },
+        { "id": 2, "nombre": "Nintendo Switch 2", "precio": 11700 },
+        { "id": 3, "nombre": "Xbox Series S", "precio": 9000 },
+        { "id": 4, "nombre": "Xbox Series X", "precio": 15600 },
+        { "id": 5, "nombre": "PlayStation 5 Slim", "precio": 11400 },
+        { "id": 6, "nombre": "PlayStation 5 Pro", "precio": 20600 },
+        { "id": 7, "nombre": "Ryzen 5 5600", "precio": 3800 },
+        { "id": 8, "nombre": "Radeon RX 9070 XT", "precio": 24100 },
+        { "id": 9, "nombre": "Nvidia RTX 3070 Ti", "precio": 9850 },
+        { "id": 10, "nombre": "Ryzen 7 5700X", "precio": 3900 },
+        { "id": 11, "nombre": "RAM Kingston Fury DDR4 16 GB", "precio": 2700 },
+        { "id": 12, "nombre": "RAM Kingston Fury DDR5 32 GB", "precio": 8000 },
+        { "id": 13, "nombre": "Grand Theft Auto 6 Play", "precio": 1700 },
+        { "id": 14, "nombre": "Grand Theft Auto 6 Xbox", "precio": 1600 },
+        { "id": 15, "nombre": "The Legend Of Zelda Ocarina Of Time", "precio":1800 }
+    ]
+}
