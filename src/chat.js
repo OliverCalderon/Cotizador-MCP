@@ -9,8 +9,8 @@ function leerJson(archivo) {
     return JSON.parse(texto);
 }
 
-const config = leerJson('./config.json');
-const catalogo = leerJson('./catalogo.json');
+const config = leerJson('../config.json');
+const catalogo = leerJson('../datos/catalogo.json');
 
 const urlOllama = new URL(config.llm.chatPath, config.llm.baseUrl);
 const urlMcp = new URL(config.mcp.url);
@@ -57,11 +57,60 @@ async function consultarOllama(mensajes, herramientas) {
     return datos.message;
 }
 
+let carrito = [];
+
+function mostrarCotizacion(cotizacion) {
+    const moneda = new Intl.NumberFormat('es-MX', {
+        style: 'currency',
+        currency: cotizacion.moneda
+    });
+
+    console.log('\nCotización');
+    const encabezados = ['Producto', 'Cantidad', 'Precio unitario', 'Subtotal'];
+    const filas = cotizacion.articulos.map((articulo) => [
+        articulo.nombre,
+        String(articulo.cantidad),
+        moneda.format(articulo.precioUnitario),
+        moneda.format(articulo.subtotal)
+    ]);
+    const anchos = encabezados.map((titulo, columna) =>
+        filas.reduce((ancho, fila) => Math.max(ancho, fila[columna].length), titulo.length)
+    );
+
+    console.log(encabezados.map((titulo, columna) => titulo.padEnd(anchos[columna])).join(' | '));
+    console.log(anchos.map((ancho) => '-'.repeat(ancho)).join('-+-'));
+    for (const fila of filas) {
+        const celdas = fila.map((valor, columna) => columna === 0
+            ? valor.padEnd(anchos[columna])
+            : valor.padStart(anchos[columna]));
+        console.log(celdas.join(' | '));
+    }
+    console.log(`Total: ${moneda.format(cotizacion.total)} ${cotizacion.moneda}`);
+}
+
+function quitarEmojis(texto) {
+    return texto.replace(/\p{RGI_Emoji}/gv, '').trim();
+}
+
 async function responderPregunta(pregunta, herramientas) {
+    const instruccionesCarrito = `${instrucciones}
+
+Carrito confirmado (IDs y cantidades): ${JSON.stringify(carrito)}
+
+Si el usuario pide agregar artículos, conserva todos los artículos confirmados.
+Si agrega un ID que ya está en el carrito, suma las unidades nuevas.
+Al agregar, llama a cotizar_compra con el carrito completo, incluidos los artículos anteriores.
+Si el usuario solicita una cotización nueva, cotiza solo los artículos del nuevo pedido.
+Si no queda claro si quiere agregar o empezar de nuevo, pregunta.
+Después de una cotización exitosa, confirma el resultado en una sola frase sin emojis.
+El programa imprime el desglose y el total. Evita repetirlos.
+Si hay un error, explícalo brevemente y sin emojis.`;
+
     const mensajes = [
-        { role: 'system', content: instrucciones },
+        { role: 'system', content: instruccionesCarrito },
         { role: 'user', content: pregunta }
     ];
+    let cotizacion = null;
 
     for (let ronda = 0; ronda < 8; ronda++) {
         console.log('\nConsultando a Qwen...');
@@ -71,34 +120,46 @@ async function responderPregunta(pregunta, herramientas) {
         const llamadas = mensaje.tool_calls ?? [];
 
         if (llamadas.length === 0) {
-        console.log(`\nAsistente: ${mensaje.content || 'El modelo no devolvió una respuesta de texto.'}`);
-        return;
+            if (cotizacion !== null) {
+                carrito = cotizacion.articulos.map((articulo) => ({
+                    id: articulo.id,
+                    cantidad: articulo.cantidad
+                }));
+                mostrarCotizacion(cotizacion);
+            }
+
+            const texto = quitarEmojis(mensaje.content ?? '');
+            if (texto || cotizacion === null) {
+                console.log(`\nAsistente: ${texto || 'El modelo no devolvió una respuesta de texto.'}`);
+            }
+            return;
         }
 
         for (const llamada of llamadas) {
-        const nombre = llamada.function.name;
-        const argumentos = llamada.function.arguments;
+            const nombre = llamada.function.name;
+            const argumentos = llamada.function.arguments;
 
-        console.log(`\nLlamando por MCP a ${nombre}`);
-        console.log('Argumentos:', JSON.stringify(argumentos));
+            console.log(`\nLlamando por MCP a ${nombre}`);
+            console.log('Argumentos:', JSON.stringify(argumentos));
 
-        const resultado = await cliente.callTool({
-            name: nombre,
-            arguments: argumentos
-        });
+            const resultado = await cliente.callTool({
+                name: nombre,
+                arguments: argumentos
+            });
 
-        const contenido = JSON.stringify({
-            error: resultado.isError === true,
-            datos: resultado.structuredContent ?? resultado.content
-        });
+            if (nombre === 'cotizar_compra') {
+                cotizacion = resultado.isError === true
+                    ? null
+                    : resultado.structuredContent ?? null;
+            }
 
-        console.log('Resultado MCP:', contenido);
+            const contenido = JSON.stringify({
+                error: resultado.isError === true,
+                datos: resultado.structuredContent ?? resultado.content
+            });
 
-        mensajes.push({
-            role: 'tool',
-            tool_name: nombre,
-            content: contenido
-        });
+            console.log('Resultado MCP:', contenido);
+            mensajes.push({ role: 'tool', tool_name: nombre, content: contenido });
         }
     }
 
@@ -130,7 +191,7 @@ async function iniciarChat() {
     });
 
     try {
-        console.log('\nEscribe tu pedido completo o escribe /salir.');
+        console.log('\nEscribe un pedido, agrega artículos al carrito o escribe /salir.');
 
         while (true) {
         const pregunta = (await terminal.question('\nTú: ')).trim();

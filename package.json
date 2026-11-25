@@ -1,10 +1,11 @@
 {
   "name": "llm-y-mcp",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Cotizador de productos con MCP y Ollama",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node pruebas/probar-mcp.js",
+    "servidor": "node src/servidor.js",
+    "chat": "node src/chat.js"
   },
   "keywords": [],
   "author": "",

@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 
-const rutaCatalogo = new URL('./catalogo.json', import.meta.url);
+const rutaCatalogo = new URL('../datos/catalogo.json', import.meta.url);
 const texto = readFileSync(rutaCatalogo, 'utf8');
 const catalogo = JSON.parse(texto);
 
