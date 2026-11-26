@@ -196,7 +196,7 @@ async function iniciarChat() {
         while (true) {
         const pregunta = (await terminal.question('\nTú: ')).trim();
 
-        if (pregunta === '/salir') break;
+        if (pregunta.toLowerCase() === '/salir') break;
         if (pregunta === '') continue;
 
         try {
